@@ -1,110 +1,153 @@
 import 'package:flutter/material.dart';
+import 'package:math_expressions/math_expressions.dart';
 
 void main() {
-  runApp(MyApp());
+  runApp(CalculatorApp());
 }
 
-class MyApp extends StatelessWidget {
+class CalculatorApp extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
-      home: MyCalculator(),
+      home: CalculatorScreen(),
     );
   }
 }
 
-class MyCalculator extends StatefulWidget {
+class CalculatorScreen extends StatefulWidget {
   @override
-  _MyCalculatorScreenState createState() => _MyCalculatorScreenState();
+  _CalculatorScreenState createState() => _CalculatorScreenState();
 }
 
-class _MyCalculatorScreenState extends State<MyCalculator> {
+class _CalculatorScreenState extends State<CalculatorScreen> {
   String _expression = '';
-  late double _result;
+  String _result = '';
 
-  void _onButtonPressed(String buttonText) {
+  void _addToExpression(String value) {
     setState(() {
-      if (buttonText == '=') {
-        _calculateResult();
-      } else if (buttonText == 'C') {
-        _clearInput();
-      } else {
-        _expression += buttonText;
-      }
+      _expression += value;
     });
   }
 
-  void _calculateResult() {
+  void _clear() {
+    setState(() {
+      _expression = '';
+      _result = '';
+    });
+  }
+
+  void _calculate() {
     try {
-      _result = double.parse(eval(_expression).toStringAsFixed(2));
-      _expression = '$_expression = $_result';
+      ContextModel cm = ContextModel();
+      Parser p = Parser();
+      Expression exp = p.parse(_expression);
+      setState(() {
+        _result = exp.evaluate(EvaluationType.REAL, cm).toString();
+      });
     } catch (e) {
-      _expression = 'Error';
+      setState(() {
+        _result = 'Error';
+      });
     }
   }
 
-  void _clearInput() {
-    _expression = '';
-    _result = null;
+  double evaluateExpression() {
+    Parser p = Parser();
+    Expression exp = p.parse(_expression);
+    return exp.evaluate(EvaluationType.REAL, ContextModel());
   }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
+      appBar: AppBar(
+        title: Text('Calculator'),
+      ),
       body: Column(
         children: [
-          Expanded(
-            child: Container(
-              padding: EdgeInsets.all(16.0),
-              alignment: Alignment.bottomRight,
-              child: Text(
-                _expression,
-                style: TextStyle(fontSize: 24.0),
-              ),
+          Container(
+            padding: EdgeInsets.all(16.0),
+            alignment: Alignment.centerRight,
+            child: Text(
+              _expression,
+              style: TextStyle(fontSize: 24.0),
             ),
           ),
-          Divider(),
-          GridView.builder(
-            gridDelegate:
-                SliverGridDelegateWithFixedCrossAxisCount(crossAxisCount: 4),
-            itemCount: 20,
-            itemBuilder: (BuildContext context, int index) {
-              final buttonText = _buttonText(index);
-              return TextButton(
-                onPressed: () => _onButtonPressed(buttonText),
-                child: Text(
-                  buttonText,
-                  style: TextStyle(fontSize: 20.0),
-                ),
-              );
-            },
+          Container(
+            padding: EdgeInsets.all(16.0),
+            alignment: Alignment.centerRight,
+            child: Text(
+              _result,
+              style: TextStyle(fontSize: 36.0, fontWeight: FontWeight.bold),
+            ),
+          ),
+          Expanded(
+            child: Padding(
+              padding: const EdgeInsets.all(8.0),
+              child: Column(
+                children: [
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceAround,
+                    children: [
+                      _buildButton('7'),
+                      _buildButton('8'),
+                      _buildButton('9'),
+                      _buildButton('/'),
+                    ],
+                  ),
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceAround,
+                    children: [
+                      _buildButton('4'),
+                      _buildButton('5'),
+                      _buildButton('6'),
+                      _buildButton('*'),
+                    ],
+                  ),
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceAround,
+                    children: [
+                      _buildButton('1'),
+                      _buildButton('2'),
+                      _buildButton('3'),
+                      _buildButton('-'),
+                    ],
+                  ),
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceAround,
+                    children: [
+                      _buildButton('0'),
+                      _buildButton('.'),
+                      _buildButton('='),
+                      _buildButton('+'),
+                    ],
+                  ),
+                ],
+              ),
+            ),
           ),
         ],
       ),
     );
   }
 
-  String _buttonText(int index){
-    if( index < 9){
-      return (index + 1).toString();
-    } else if (index == 9){
-      return '0';
-    } else if (index == 10){
-      return '+';
-    } else if (index == 11){
-      return '-';
-    } else if (index ==  12){
-      return '*';
-    } else if (index == 13){
-      return '/';
-    } else if (index == 15){
-      return '.';
-    } else if (index == 16){
-      return 'C';
-    } else if ( index == 17){
-      return '=';
-    }
-    return '';
+  Widget _buildButton(String value) {
+    return ElevatedButton(
+      onPressed: () {
+        if (value == '=') {
+          _calculate();
+        } else if (value == 'C') {
+          _clear();
+        } else {
+          _addToExpression(value);
+        }
+      },
+      child: value == '='
+          ? Text(
+              value,
+              style: TextStyle(fontSize: 24.0),
+            )
+          : Text(value),
+    );
   }
-
 }
